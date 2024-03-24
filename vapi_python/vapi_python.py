@@ -40,10 +40,13 @@ class Vapi:
         if not web_call_url:
             raise Exception("Error: Unable to create call.")
 
-        print('Joining call... ' + call_id)
+        print('Joining call... ' + web_call_url)
 
         self.__client = DailyCall()
         self.__client.join(web_call_url)
+
+    def get_client(self):
+        return self.__client
 
     def stop(self):
         self.__client.leave()

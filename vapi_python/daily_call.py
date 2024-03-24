@@ -1,6 +1,9 @@
 import daily
 import threading
 import pyaudio
+import sys
+import asyncio
+import websockets
 
 SAMPLE_RATE = 16000
 NUM_CHANNELS = 1
@@ -18,7 +21,6 @@ def is_playable_speaker(participant):
 class DailyCall(daily.EventHandler):
     def __init__(self):
         daily.Daily.init()
-
         self.__audio_interface = pyaudio.PyAudio()
 
         self.__input_audio_stream = self.__audio_interface.open(
@@ -91,6 +93,11 @@ class DailyCall(daily.EventHandler):
         self.__receive_bot_audio_thread.start()
         self.__send_user_audio_thread.start()
 
+
+    def get_output_audio_stream(self):
+        return self.__output_audio_stream
+    
+    
     def on_inputs_updated(self, inputs):
         self.__app_inputs_updated = True
         self.maybe_start()
@@ -148,6 +155,16 @@ class DailyCall(daily.EventHandler):
                 except Exception as e:
                     print(e)
 
+    def process_audio(self,buffer):
+    # Process the audio buffer here
+        # sys.stdout.buffer.write(buffer)
+        print("got a buffer")
+
+    async def send_audio_over_websocket(self, audio_data):
+        uri = "ws://localhost:8765"  # Your WebSocket server URI
+        async with websockets.connect(uri) as websocket:
+            await websocket.send(audio_data)
+
     def receive_bot_audio(self):
         self.__start_event.wait()
 
@@ -160,3 +177,6 @@ class DailyCall(daily.EventHandler):
 
             if len(buffer) > 0:
                 self.__output_audio_stream.write(buffer, CHUNK_SIZE)
+                asyncio.run(self.send_audio_over_websocket(buffer))
+    
+    
